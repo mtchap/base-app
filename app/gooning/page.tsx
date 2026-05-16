@@ -28,7 +28,7 @@ function dateKey(year: number, month: number, day: number) {
   return toDateKey(new Date(year, month, day));
 }
 
-export default function DisciplinePage() {
+export default function GooningPage() {
   const { data, isLoaded, updateHabitDay } = useAppData();
   const today = todayKey();
 
@@ -117,7 +117,7 @@ export default function DisciplinePage() {
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div>
-          <p className="text-[10px] tracking-widest uppercase text-ink-3 mb-1">Discipline</p>
+          <p className="text-[10px] tracking-widest uppercase text-ink-3 mb-1">Gooning</p>
           <h1 className="text-[2rem] leading-tight font-serif text-ink">Goon Log</h1>
         </div>
 

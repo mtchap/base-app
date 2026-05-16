@@ -23,7 +23,7 @@ const NAV = [
   { href: "/dashboard",   label: "Areas",      Icon: LayoutGrid },
   { href: "/habits",      label: "Habits",     Icon: Activity },
   { href: "/looks",       label: "Aesthetic",  Icon: Sparkles },
-  { href: "/discipline",  label: "Discipline", Icon: Shield },
+  { href: "/gooning",     label: "Gooning",    Icon: Shield },
   { href: "/archive",     label: "Archive",    Icon: Archive },
 ] as const;
 
