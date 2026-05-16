@@ -1,26 +1,96 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* ─── Dark Palette ────────────────────────────────────────────────────────── */
+
+  /* Backgrounds — layered dark navy */
+  --color-canvas:    #0C0D15;
+  --color-surface:   #111220;
+  --color-surface-2: #181926;
+  --color-surface-3: #1E202E;
+
+  /* Borders — subtle dark blue-gray */
+  --color-border:       #262840;
+  --color-border-light: #1C1D2E;
+
+  /* Text — cool off-white with slight blue tint */
+  --color-ink:   #E2E4F0;
+  --color-ink-2: #8A8CAA;
+  --color-ink-3: #4A4C68;
+
+  /* Accent — Palantir amber */
+  --color-accent:       #F07A16;
+  --color-accent-light: rgba(240, 122, 22, 0.14);
+  --color-accent-fg:    #0C0D15;
+
+  /* Teal green — success / done */
+  --color-sage:       #22D3A0;
+  --color-sage-light: rgba(34, 211, 160, 0.12);
+
+  /* Red — warning / error */
+  --color-rust:       #FF5B5B;
+  --color-rust-light: rgba(255, 91, 91, 0.12);
+
+  /* ─── Typography ──────────────────────────────────────────────────────────── */
+  /* font-sans  → Inter (body)                                                   */
+  /* font-serif → Space Grotesk (display / headings, technical geometric)        */
+  /* font-mono  → JetBrains Mono (data, symbols, numbers)                       */
+  --font-sans:  var(--font-inter),  ui-sans-serif,  system-ui, sans-serif;
+  --font-serif: var(--font-space),  'Space Grotesk', ui-sans-serif, sans-serif;
+  --font-mono:  var(--font-jb),     ui-monospace,   'Courier New', monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ─── Custom utilities ────────────────────────────────────────────────────────── */
+@layer utilities {
+  .shadow-card {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.03),
+      0 2px 8px 0 rgba(0, 0, 0, 0.5);
+  }
+  .shadow-card-hover {
+    box-shadow:
+      0 0 0 1px rgba(240, 122, 22, 0.25),
+      0 4px 16px 0 rgba(0, 0, 0, 0.6);
+  }
+  /* Subtle grid texture for backgrounds */
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  /* Amber left-border accent for active/important cards */
+  .border-l-accent {
+    border-left: 2px solid var(--color-accent);
   }
 }
 
+/* ─── Base ────────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { height: 100%; }
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  height: 100%;
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Scrollbar ───────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
+
+/* ─── Focus / Selection ───────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 1px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+::selection {
+  background: rgba(240, 122, 22, 0.25);
+  color: var(--color-ink);
 }
