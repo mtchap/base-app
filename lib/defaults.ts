@@ -49,6 +49,7 @@ export function emptyHabitDay(): HabitDay {
     water:       false,
     sleep:       false,
     supplements: false,
+    gooning:     false,
     mood:        0,
   };
 }

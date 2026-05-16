@@ -122,15 +122,17 @@ export interface HabitDay {
   water: boolean;
   sleep: boolean;
   supplements: boolean;
+  gooning: boolean;
   mood: number;   // 0 = unset, 1–5
 }
 
-export const HABITS: { key: keyof Omit<HabitDay, "mood">; label: string; icon: string }[] = [
+export const HABITS: { key: keyof Omit<HabitDay, "mood">; label: string; icon: string; negative?: boolean }[] = [
   { key: "movement",    label: "Movement",    icon: "🏃" },
   { key: "protein",     label: "Protein",     icon: "🥩" },
   { key: "water",       label: "Water",       icon: "💧" },
   { key: "sleep",       label: "Sleep",       icon: "🌙" },
   { key: "supplements", label: "Supplements", icon: "💊" },
+  { key: "gooning",     label: "Gooning",     icon: "🌀", negative: true },
 ];
 
 // ─── Looksmaxxing — Qoves Protocol (Feb 2026) ────────────────────────────────

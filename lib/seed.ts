@@ -145,18 +145,18 @@ export function createSeedData(): AppData {
   days.forEach(d => { habits[d] = emptyHabitDay(); });
 
   // Fill past days with plausible data (don't fill future or today)
-  const seedHabits: [boolean, boolean, boolean, boolean, boolean, number][] = [
-    [true,  true,  true,  true,  true,  4],
-    [false, true,  true,  false, true,  3],
-    [true,  false, true,  true,  true,  4],
-    [true,  true,  false, true,  false, 5],
-    [false, true,  true,  true,  true,  4],
-    [true,  true,  true,  true,  true,  5],
+  const seedHabits: [boolean, boolean, boolean, boolean, boolean, boolean, number][] = [
+    [true,  true,  true,  true,  true,  false, 4],
+    [false, true,  true,  false, true,  true,  3],
+    [true,  false, true,  true,  true,  false, 4],
+    [true,  true,  false, true,  false, false, 5],
+    [false, true,  true,  true,  true,  true,  4],
+    [true,  true,  true,  true,  true,  false, 5],
   ];
   days.slice(0, 6).forEach((d, i) => {
     if (d >= today) return;
-    const [movement, protein, water, sleep, supplements, mood] = seedHabits[i];
-    habits[d] = { movement, protein, water, sleep, supplements, mood };
+    const [movement, protein, water, sleep, supplements, gooning, mood] = seedHabits[i];
+    habits[d] = { movement, protein, water, sleep, supplements, gooning, mood };
   });
 
   // ── Looks — Qoves Protocol ──────────────────────────────────────────────────

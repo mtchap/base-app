@@ -70,13 +70,17 @@ export default function HabitsPage() {
   }
 
   // ── Streak helper ─────────────────────────────────────────────────────────
-  function getStreak(habitKey: keyof Omit<HabitDay, "mood">): number {
+  // For positive habits: consecutive days WITH the habit
+  // For negative habits: consecutive days WITHOUT the habit (clean streak)
+  function getStreak(habitKey: keyof Omit<HabitDay, "mood">, negative = false): number {
     let count = 0;
     const d = new Date(parseDateKey(today));
     while (true) {
       const key = toDateKey(d);
       const day = data.habits[key];
-      if (!day || !day[habitKey]) break;
+      const done = day?.[habitKey] ?? false;
+      const good = negative ? !done : done;
+      if (!good) break;
       count++;
       d.setDate(d.getDate() - 1);
     }
@@ -84,6 +88,7 @@ export default function HabitsPage() {
   }
 
   // ── Completion % for the week ─────────────────────────────────────────────
+  // Positive habits: checked = good. Negative habits: unchecked = good.
   function weekCompletionPercent(): number {
     const pastDays = days.filter(d => !isFuture(d));
     if (pastDays.length === 0) return 0;
@@ -93,7 +98,8 @@ export default function HabitsPage() {
       const day = data.habits[d] ?? emptyHabitDay();
       HABITS.forEach(h => {
         total++;
-        if (day[h.key]) done++;
+        const checked = day[h.key];
+        if (h.negative ? !checked : checked) done++;
       });
     });
     return Math.round((done / total) * 100);
@@ -172,8 +178,8 @@ export default function HabitsPage() {
           </div>
 
           {/* Habit rows */}
-          {HABITS.map(({ key, label, icon }, rowIdx) => {
-            const streak = getStreak(key);
+          {HABITS.map(({ key, label, icon, negative }, rowIdx) => {
+            const streak = getStreak(key, negative);
             return (
               <div
                 key={key}
@@ -188,8 +194,8 @@ export default function HabitsPage() {
                   <div>
                     <p className="text-xs font-medium text-ink">{label}</p>
                     {streak > 0 && (
-                      <p className="text-[9px] text-accent">
-                        {streak}d streak
+                      <p className={cn("text-[9px]", negative ? "text-sage" : "text-accent")}>
+                        {streak}d {negative ? "clean" : "streak"}
                       </p>
                     )}
                   </div>
@@ -217,8 +223,12 @@ export default function HabitsPage() {
                           "w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all",
                           future
                             ? "border-border-light opacity-30 cursor-not-allowed"
+                            : negative
+                            ? checked
+                              ? "bg-rust border-rust text-white"       // bad: did it
+                              : "border-sage/40 hover:border-sage/70"  // good: clean day
                             : checked
-                            ? "bg-sage border-sage text-white"
+                            ? "bg-sage border-sage text-white"         // good: completed
                             : "border-border hover:border-ink-3"
                         )}
                       >
@@ -287,12 +297,12 @@ export default function HabitsPage() {
         {/* ── Week Summary ───────────────────────────────────────────────── */}
         {isCurrentWeek && (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {HABITS.map(({ key, label, icon }) => {
-              const streak = getStreak(key);
-              const thisWeekCount = days
-                .filter(d => !isFuture(d))
-                .filter(d => (data.habits[d] ?? emptyHabitDay())[key]).length;
-              const pastDays = days.filter(d => !isFuture(d)).length;
+            {HABITS.map(({ key, label, icon, negative }) => {
+              const streak = getStreak(key, negative);
+              const pastDays = days.filter(d => !isFuture(d));
+              const checkedCount = pastDays.filter(d => (data.habits[d] ?? emptyHabitDay())[key]).length;
+              // For negative habits, "good" count = days clean (not checked)
+              const displayCount = negative ? pastDays.length - checkedCount : checkedCount;
 
               return (
                 <div key={key} className="bg-surface rounded-xl border border-border-light p-4 shadow-card">
@@ -301,12 +311,14 @@ export default function HabitsPage() {
                     <span className="text-xs font-medium text-ink-2">{label}</span>
                   </div>
                   <p className="text-2xl font-serif text-ink">
-                    {thisWeekCount}
-                    <span className="text-base text-ink-3">/{pastDays}</span>
+                    {displayCount}
+                    <span className="text-base text-ink-3">/{pastDays.length}</span>
                   </p>
-                  {streak > 1 && (
+                  {negative ? (
+                    <p className="text-[10px] text-ink-3 mt-1">days clean</p>
+                  ) : streak > 1 ? (
                     <p className="text-[10px] text-accent mt-1">{streak}d streak</p>
-                  )}
+                  ) : null}
                 </div>
               );
             })}
