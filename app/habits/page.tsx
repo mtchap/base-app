@@ -78,7 +78,8 @@ export default function HabitsPage() {
     while (true) {
       const key = toDateKey(d);
       const day = data.habits[key];
-      const done = day?.[habitKey] ?? false;
+      if (!day) break; // no data for this day — stop counting
+      const done = day[habitKey];
       const good = negative ? !done : done;
       if (!good) break;
       count++;
