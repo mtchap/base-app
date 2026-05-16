@@ -33,6 +33,7 @@ export default function HabitsPage() {
   const today = todayKey();
 
   const [viewWeekStart, setViewWeekStart] = useState(() => weekStartKey());
+  const [openMoodDay, setOpenMoodDay] = useState<string | null>(null);
 
   const days = getWeekDays(viewWeekStart);
 
@@ -265,28 +266,38 @@ export default function HabitsPage() {
                   {future ? (
                     <span className="text-xs text-ink-3">–</span>
                   ) : (
-                    <div className="relative group">
+                    <div className="relative">
                       <button
-                        className="text-lg leading-none"
+                        onClick={() => setOpenMoodDay(openMoodDay === day ? null : day)}
+                        className="text-lg leading-none hover:scale-110 transition-transform"
                         title={MOOD_LABELS[mood]?.label}
                       >
                         {MOOD_LABELS[mood]?.emoji}
                       </button>
-                      {/* Mood picker tooltip */}
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:flex bg-surface border border-border rounded-xl shadow-card p-1.5 gap-1 z-10">
-                        {[1, 2, 3, 4, 5].map(m => (
-                          <button
-                            key={m}
-                            onClick={() => setMood(day, m)}
-                            className={cn(
-                              "text-base p-0.5 rounded transition-transform hover:scale-125",
-                              mood === m && "scale-125"
-                            )}
-                          >
-                            {MOOD_LABELS[m].emoji}
-                          </button>
-                        ))}
-                      </div>
+                      {openMoodDay === day && (
+                        <>
+                          {/* Click-away backdrop */}
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setOpenMoodDay(null)}
+                          />
+                          {/* Picker */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex bg-surface border border-border rounded-xl shadow-card p-1.5 gap-1 z-20">
+                            {[1, 2, 3, 4, 5].map(m => (
+                              <button
+                                key={m}
+                                onClick={() => { setMood(day, m); setOpenMoodDay(null); }}
+                                className={cn(
+                                  "text-base p-1 rounded transition-transform hover:scale-125",
+                                  mood === m && "scale-125"
+                                )}
+                              >
+                                {MOOD_LABELS[m].emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
