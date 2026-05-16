@@ -10,19 +10,21 @@ import {
   Activity,
   Archive,
   Sparkles,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useAppData } from "@/hooks/useAppData";
 import SyncPanel from "@/components/ui/SyncPanel";
 
 const NAV = [
-  { href: "/",           label: "Today",     Icon: Sun },
-  { href: "/week",       label: "Week",      Icon: CalendarDays },
-  { href: "/brain-dump", label: "Capture",   Icon: Zap },
-  { href: "/dashboard",  label: "Areas",     Icon: LayoutGrid },
-  { href: "/habits",     label: "Habits",    Icon: Activity },
-  { href: "/looks",      label: "Aesthetic", Icon: Sparkles },
-  { href: "/archive",    label: "Archive",   Icon: Archive },
+  { href: "/",            label: "Today",      Icon: Sun },
+  { href: "/week",        label: "Week",       Icon: CalendarDays },
+  { href: "/brain-dump",  label: "Capture",    Icon: Zap },
+  { href: "/dashboard",   label: "Areas",      Icon: LayoutGrid },
+  { href: "/habits",      label: "Habits",     Icon: Activity },
+  { href: "/looks",       label: "Aesthetic",  Icon: Sparkles },
+  { href: "/discipline",  label: "Discipline", Icon: Shield },
+  { href: "/archive",     label: "Archive",    Icon: Archive },
 ] as const;
 
 function DesktopNavItem({

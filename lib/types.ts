@@ -132,7 +132,6 @@ export const HABITS: { key: keyof Omit<HabitDay, "mood">; label: string; icon: s
   { key: "water",       label: "Water",       icon: "💧" },
   { key: "sleep",       label: "Sleep",       icon: "🌙" },
   { key: "supplements", label: "Supplements", icon: "💊" },
-  { key: "gooning",     label: "Gooning",     icon: "🌀", negative: true },
 ];
 
 // ─── Looksmaxxing — Qoves Protocol (Feb 2026) ────────────────────────────────
