@@ -22,13 +22,13 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Base",
+  title: "Luke",
   description: "Personal operating system. Life, health, and projects — in one place.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Base",
+    title: "Luke",
   },
 };
 

@@ -9,7 +9,6 @@ import {
   LayoutGrid,
   Activity,
   Archive,
-  Sparkles,
   Shield,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -22,7 +21,6 @@ const NAV = [
   { href: "/brain-dump",  label: "Capture",    Icon: Zap },
   { href: "/dashboard",   label: "Areas",      Icon: LayoutGrid },
   { href: "/habits",      label: "Habits",     Icon: Activity },
-  { href: "/looks",       label: "Aesthetic",  Icon: Sparkles },
   { href: "/gooning",     label: "Gooning",    Icon: Shield },
   { href: "/archive",     label: "Archive",    Icon: Archive },
 ] as const;
@@ -101,7 +99,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Wordmark */}
         <div className="px-5 pt-7 pb-5 border-b border-border-light">
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-serif font-bold text-ink tracking-tight">BASE</span>
+            <span className="text-lg font-serif font-bold text-ink tracking-tight">LUKE</span>
             <span className="text-[9px] font-mono text-ink-3 tracking-[0.15em]">v1</span>
           </div>
           <p className="text-[9px] font-mono text-ink-3 mt-0.5 tracking-[0.12em] uppercase">
