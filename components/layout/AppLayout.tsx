@@ -134,8 +134,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
+      {/* ── Mobile Top Bar ────────────────────────────────────────────────── */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-surface border-b border-border flex items-center justify-between px-4 h-11">
+        <span className="text-sm font-serif font-bold text-ink tracking-tight">BASE</span>
+        <SyncPanel
+          syncKey={syncKey}
+          syncStatus={syncStatus}
+          onActivate={activateSyncKey}
+          onClear={clearSyncKey}
+          onSyncNow={syncNow}
+          dropDirection="down"
+        />
+      </div>
+
       {/* ── Main Content ──────────────────────────────────────────────────── */}
-      <main className="flex-1 lg:ml-52 overflow-y-auto min-h-full">
+      <main className="flex-1 lg:ml-52 overflow-y-auto min-h-full pt-11 lg:pt-0">
         {children}
       </main>
 

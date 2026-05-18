@@ -11,9 +11,10 @@ interface Props {
   onActivate: (key: string) => Promise<void>;
   onClear: () => void;
   onSyncNow: () => Promise<void>;
+  dropDirection?: "up" | "down";
 }
 
-export default function SyncPanel({ syncKey, syncStatus, onActivate, onClear, onSyncNow }: Props) {
+export default function SyncPanel({ syncKey, syncStatus, onActivate, onClear, onSyncNow, dropDirection = "up" }: Props) {
   const [open, setOpen]     = useState(false);
   const [input, setInput]   = useState("");
   const [busy, setBusy]     = useState(false);
@@ -71,7 +72,10 @@ export default function SyncPanel({ syncKey, syncStatus, onActivate, onClear, on
 
       {/* Dropdown panel */}
       {open && (
-        <div className="absolute bottom-full left-0 mb-2 w-56 bg-surface border border-border rounded-lg shadow-card p-3 z-50">
+        <div className={cn(
+          "absolute w-56 bg-surface border border-border rounded-lg shadow-card p-3 z-50",
+          dropDirection === "up" ? "bottom-full left-0 mb-2" : "top-full right-0 mt-2"
+        )}>
 
           {syncKey ? (
             <>
