@@ -8,7 +8,8 @@ import type {
   LooksDay,
   LooksStack,
 } from "./types";
-import { todayKey, weekStartKey, getWeekDays } from "./utils";
+import { todayKey, weekStartKey, getWeekDays, generateId } from "./utils";
+import type { RapidLogItem } from "./types";
 
 export function emptyDailyLog(date: string): DailyLog {
   return {
@@ -157,7 +158,40 @@ export function ensureDefaults(data: AppData): AppData {
   const next  = { ...data };
 
   if (!next.dailyLogs[today]) {
-    next.dailyLogs = { ...next.dailyLogs, [today]: emptyDailyLog(today) };
+    const newLog = emptyDailyLog(today);
+
+    // ── Auto-migrate uncompleted tasks from the most recent past day ──────────
+    const pastKeys = Object.keys(next.dailyLogs).sort().reverse();
+    const prevKey  = pastKeys[0]; // most recent previous day
+    const prevLog  = prevKey ? next.dailyLogs[prevKey] : null;
+
+    if (prevLog) {
+      const toMigrate = prevLog.rapidLog.filter(
+        item => item.symbol === "task" || item.symbol === "migrated"
+      );
+
+      if (toMigrate.length > 0) {
+        // Copy into today as migrated items (new IDs to avoid collisions)
+        newLog.rapidLog = toMigrate.map(
+          (item): RapidLogItem => ({ ...item, id: generateId(), symbol: "migrated" })
+        );
+
+        // Mark the originals in yesterday's log as migrated too
+        next.dailyLogs = {
+          ...next.dailyLogs,
+          [prevKey]: {
+            ...prevLog,
+            rapidLog: prevLog.rapidLog.map(item =>
+              item.symbol === "task"
+                ? { ...item, symbol: "migrated" as const }
+                : item
+            ),
+          },
+        };
+      }
+    }
+
+    next.dailyLogs = { ...next.dailyLogs, [today]: newLog };
     changed = true;
   }
   if (!next.weeklyLogs[ws]) {
