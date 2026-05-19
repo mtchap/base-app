@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { ChevronDown, ChevronRight, Download, Upload, AlertCircle } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, Upload, AlertCircle, Search, X } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card, SectionLabel, Divider } from "@/components/ui/Card";
 import { useAppData } from "@/hooks/useAppData";
@@ -26,6 +26,7 @@ export default function ArchivePage() {
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [importError, setImportError]   = useState<string | null>(null);
   const [importOk, setImportOk]         = useState(false);
+  const [search, setSearch]             = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   function exportData() {
@@ -67,11 +68,27 @@ export default function ArchivePage() {
     );
   }
 
-  // Sort all daily logs descending, excluding today
   const today = todayKey();
-  const pastDates = Object.keys(data.dailyLogs)
+  const allPastDates = Object.keys(data.dailyLogs)
     .filter(d => d < today)
     .sort((a, b) => b.localeCompare(a));
+
+  // Apply search filter
+  const q = search.trim().toLowerCase();
+  const pastDates = q
+    ? allPastDates.filter(date => {
+        const log = data.dailyLogs[date];
+        return (
+          date.includes(q) ||
+          formatLongDate(date).toLowerCase().includes(q) ||
+          log.intention?.toLowerCase().includes(q) ||
+          log.priorities.some(p => p.toLowerCase().includes(q)) ||
+          log.rapidLog.some(e => e.content.toLowerCase().includes(q)) ||
+          log.reflection?.movedForward?.toLowerCase().includes(q) ||
+          log.reflection?.migrating?.toLowerCase().includes(q)
+        );
+      })
+    : allPastDates;
 
   const toggleExpand = (date: string) => {
     setExpandedDate(prev => (prev === date ? null : date));
@@ -86,11 +103,44 @@ export default function ArchivePage() {
           <p className="text-[10px] tracking-widest uppercase text-ink-3 mb-1">Archive</p>
           <h1 className="text-[2rem] leading-tight font-serif text-ink">Past Days</h1>
           <p className="text-sm text-ink-3 mt-1">
-            {pastDates.length === 0
+            {allPastDates.length === 0
               ? "Your past logs will appear here."
-              : `${pastDates.length} day${pastDates.length === 1 ? "" : "s"} logged.`}
+              : `${allPastDates.length} day${allPastDates.length === 1 ? "" : "s"} logged.`}
           </p>
         </div>
+
+        {/* ── Search ─────────────────────────────────────────────────────── */}
+        {allPastDates.length > 0 && (
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by date, intention, or keyword…"
+              className={cn(
+                "w-full bg-surface-2 border border-border rounded-lg pl-9 pr-9 py-2.5",
+                "text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent transition-colors"
+              )}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink transition-colors"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Search results count */}
+        {q && (
+          <p className="text-[11px] font-mono text-ink-3">
+            {pastDates.length === 0
+              ? "No results"
+              : `${pastDates.length} result${pastDates.length !== 1 ? "s" : ""} for "${search}"`}
+          </p>
+        )}
 
         {/* ── Backup / Restore ───────────────────────────────────────────── */}
         <div className="flex items-center gap-2">
@@ -118,8 +168,8 @@ export default function ArchivePage() {
           <div className="text-[11px] text-sage font-mono">Backup restored — reloading…</div>
         )}
 
-        {/* ── Empty state ────────────────────────────────────────────────── */}
-        {pastDates.length === 0 && (
+        {/* ── Empty states ───────────────────────────────────────────────── */}
+        {allPastDates.length === 0 && (
           <Card>
             <p className="text-sm text-ink-3 text-center py-6">
               Nothing archived yet. Come back tomorrow — your first entry will appear here.
@@ -127,12 +177,20 @@ export default function ArchivePage() {
           </Card>
         )}
 
+        {allPastDates.length > 0 && pastDates.length === 0 && (
+          <Card>
+            <p className="text-sm text-ink-3 text-center py-4">
+              No entries match &ldquo;{search}&rdquo;.
+            </p>
+          </Card>
+        )}
+
         {/* ── Log list ───────────────────────────────────────────────────── */}
         <div className="space-y-2">
           {pastDates.map(date => {
-            const log = data.dailyLogs[date];
+            const log        = data.dailyLogs[date];
             const isExpanded = expandedDate === date;
-            const doneCount = log.rapidLog.filter(e => e.symbol === "completed").length;
+            const doneCount  = log.rapidLog.filter(e => e.symbol === "completed").length;
             const totalTasks = log.rapidLog.filter(e => ["task", "completed", "migrated"].includes(e.symbol)).length;
 
             return (
@@ -145,9 +203,7 @@ export default function ArchivePage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-ink-3 mb-0.5">{formatLongDate(date)}</p>
                     {log.intention ? (
-                      <p className="text-sm text-ink leading-snug line-clamp-1">
-                        {log.intention}
-                      </p>
+                      <p className="text-sm text-ink leading-snug line-clamp-1">{log.intention}</p>
                     ) : (
                       <p className="text-sm text-ink-3 italic">No intention set</p>
                     )}
@@ -157,16 +213,10 @@ export default function ArchivePage() {
                           {doneCount}/{totalTasks} tasks done
                         </span>
                       )}
-                      {log.health.movement && (
-                        <span className="text-[10px] text-sage">🏃 Moved</span>
-                      )}
-                      {log.health.protein && (
-                        <span className="text-[10px] text-sage">🥩 Protein</span>
-                      )}
+                      {log.health.movement && <span className="text-[10px] text-sage">🏃 Moved</span>}
+                      {log.health.protein  && <span className="text-[10px] text-sage">🥩 Protein</span>}
                       {log.health.sleep > 0 && (
-                        <span className="text-[10px] text-ink-3">
-                          🌙 {log.health.sleep}h
-                        </span>
+                        <span className="text-[10px] text-ink-3">🌙 {log.health.sleep}h</span>
                       )}
                     </div>
                   </div>
@@ -186,8 +236,18 @@ export default function ArchivePage() {
                         <div className="space-y-1">
                           {log.priorities.filter(p => p).map((p, i) => (
                             <div key={i} className="flex items-start gap-2">
-                              <span className="text-[10px] text-ink-3 font-mono mt-0.5 w-3">{i + 1}</span>
-                              <span className="text-sm text-ink-2">{p}</span>
+                              <span className={cn(
+                                "text-[10px] font-mono mt-0.5 w-3",
+                                log.prioritiesDone?.[i] ? "text-sage" : "text-ink-3"
+                              )}>
+                                {log.prioritiesDone?.[i] ? "×" : String(i + 1)}
+                              </span>
+                              <span className={cn(
+                                "text-sm",
+                                log.prioritiesDone?.[i] ? "text-ink-3 line-through" : "text-ink-2"
+                              )}>
+                                {p}
+                              </span>
                             </div>
                           ))}
                         </div>

@@ -1,42 +1,36 @@
 "use client";
 
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Sun,
-  CalendarDays,
-  Zap,
-  LayoutGrid,
-  Activity,
-  Archive,
-  Sparkles,
-  Shield,
+  Sun, CalendarDays, Zap, LayoutGrid, Activity,
+  Archive, Sparkles, Shield, Plus, X,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useAppData } from "@/hooks/useAppData";
+import { todayKey, generateId } from "@/lib/utils";
+import type { RapidLogItem } from "@/lib/types";
 import SyncPanel from "@/components/ui/SyncPanel";
 
 const NAV = [
-  { href: "/",            label: "Today",      Icon: Sun },
-  { href: "/week",        label: "Week",       Icon: CalendarDays },
-  { href: "/brain-dump",  label: "Capture",    Icon: Zap },
-  { href: "/dashboard",   label: "Areas",      Icon: LayoutGrid },
-  { href: "/habits",      label: "Habits",     Icon: Activity },
-  { href: "/looks",       label: "Aesthetic",  Icon: Sparkles },
-  { href: "/gooning",     label: "Gooning",    Icon: Shield },
-  { href: "/archive",     label: "Archive",    Icon: Archive },
+  { href: "/",            label: "Today",     Icon: Sun },
+  { href: "/week",        label: "Week",      Icon: CalendarDays },
+  { href: "/brain-dump",  label: "Capture",   Icon: Zap },
+  { href: "/dashboard",   label: "Areas",     Icon: LayoutGrid },
+  { href: "/habits",      label: "Habits",    Icon: Activity },
+  { href: "/looks",       label: "Aesthetic", Icon: Sparkles },
+  { href: "/gooning",     label: "Gooning",   Icon: Shield },
+  { href: "/archive",     label: "Archive",   Icon: Archive },
 ] as const;
 
+// ─── Nav items ────────────────────────────────────────────────────────────────
+
 function DesktopNavItem({
-  href,
-  label,
-  Icon,
-  active,
+  href, label, Icon, active,
 }: {
-  href: string;
-  label: string;
-  Icon: React.FC<{ size?: number; strokeWidth?: number }>;
-  active: boolean;
+  href: string; label: string;
+  Icon: React.FC<{ size?: number; strokeWidth?: number }>; active: boolean;
 }) {
   return (
     <Link
@@ -48,12 +42,10 @@ function DesktopNavItem({
           : "text-ink-3 hover:text-ink hover:bg-surface-2"
       )}
     >
-      <span
-        className={cn(
-          "w-0.5 h-4 rounded-full transition-all",
-          active ? "bg-accent" : "bg-transparent"
-        )}
-      />
+      <span className={cn(
+        "w-0.5 h-4 rounded-full transition-all",
+        active ? "bg-accent" : "bg-transparent"
+      )} />
       <Icon size={14} strokeWidth={active ? 2 : 1.5} />
       <span className="tracking-wide">{label}</span>
     </Link>
@@ -61,15 +53,10 @@ function DesktopNavItem({
 }
 
 function MobileNavItem({
-  href,
-  label,
-  Icon,
-  active,
+  href, label, Icon, active,
 }: {
-  href: string;
-  label: string;
-  Icon: React.FC<{ size?: number; strokeWidth?: number }>;
-  active: boolean;
+  href: string; label: string;
+  Icon: React.FC<{ size?: number; strokeWidth?: number }>; active: boolean;
 }) {
   return (
     <Link
@@ -85,12 +72,99 @@ function MobileNavItem({
   );
 }
 
+// ─── Quick Capture Overlay ────────────────────────────────────────────────────
+
+function QuickCapture({ onClose }: { onClose: () => void }) {
+  const { data, updateDailyLog } = useAppData();
+  const [text, setText] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  // Close on Escape
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  function submit() {
+    const trimmed = text.trim();
+    if (!trimmed) { onClose(); return; }
+    const today = todayKey();
+    const existing = data.dailyLogs[today];
+    const newItem: RapidLogItem = {
+      id: generateId(),
+      symbol: "task",
+      content: trimmed,
+      createdAt: new Date().toISOString(),
+    };
+    updateDailyLog(today, {
+      rapidLog: [...(existing?.rapidLog ?? []), newItem],
+    });
+    onClose();
+  }
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40 bg-canvas/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Panel */}
+      <div className="fixed bottom-24 lg:bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
+        <div className="bg-surface border border-border rounded-2xl shadow-card p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-mono text-ink-3 uppercase tracking-widest">Quick capture</span>
+            <span className="text-[10px] font-mono text-ink-3 ml-auto">→ Today&apos;s log</span>
+          </div>
+          <div className="flex items-center gap-3 mt-2">
+            <span className="text-sm font-mono text-ink-3">○</span>
+            <input
+              ref={inputRef}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter") submit();
+                if (e.key === "Escape") onClose();
+              }}
+              placeholder="What do you need to do?"
+              className="flex-1 bg-transparent text-base text-ink placeholder:text-ink-3 focus:outline-none"
+            />
+          </div>
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-border-light">
+            <span className="text-[10px] text-ink-3 font-mono">Enter to add · Esc to cancel</span>
+            <button
+              onClick={submit}
+              disabled={!text.trim()}
+              className="px-4 py-1.5 rounded-lg bg-accent text-canvas text-[12px] font-mono disabled:opacity-40 hover:bg-accent/90 transition-colors"
+            >
+              Add task
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Layout ───────────────────────────────────────────────────────────────────
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const { syncKey, syncStatus, activateSyncKey, clearSyncKey, syncNow, forcePush } = useAppData();
+  const [captureOpen, setCaptureOpen] = useState(false);
 
   const isActive = (href: string) =>
     href === "/" ? path === "/" : path.startsWith(href);
+
+  const closeCapture = useCallback(() => setCaptureOpen(false), []);
 
   return (
     <div className="flex h-full bg-grid">
@@ -122,8 +196,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        {/* Footer — sync status */}
-        <div className="px-4 py-4 border-t border-border-light">
+        {/* Footer */}
+        <div className="px-4 py-3 border-t border-border-light space-y-3">
           <SyncPanel
             syncKey={syncKey}
             syncStatus={syncStatus}
@@ -132,6 +206,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onSyncNow={syncNow}
             onForcePush={forcePush}
           />
+          <p className="text-[9px] font-mono text-ink-3/50 leading-relaxed">
+            Add to Home Screen in your browser for the full app experience.
+          </p>
         </div>
       </aside>
 
@@ -168,6 +245,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           ))}
         </div>
       </nav>
+
+      {/* ── Floating Quick-Capture Button ─────────────────────────────────── */}
+      {!captureOpen && (
+        <button
+          onClick={() => setCaptureOpen(true)}
+          className={cn(
+            "fixed z-40 w-12 h-12 rounded-full bg-accent text-canvas shadow-card",
+            "flex items-center justify-center hover:bg-accent/90 active:scale-95 transition-all",
+            // Desktop: above bottom-right; Mobile: above bottom nav
+            "bottom-20 right-5 lg:bottom-8 lg:right-8"
+          )}
+          title="Quick capture (add task to today)"
+          aria-label="Quick capture"
+        >
+          <Plus size={20} strokeWidth={2} />
+        </button>
+      )}
+
+      {/* ── Quick Capture Overlay ─────────────────────────────────────────── */}
+      {captureOpen && <QuickCapture onClose={closeCapture} />}
     </div>
   );
 }

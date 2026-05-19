@@ -9,7 +9,6 @@ import type {
   LifeArea, LifeAreaCard, HabitDay, LooksDay, LooksStack,
 } from "@/lib/types";
 import { loadData, saveData } from "@/lib/storage";
-import { createSeedData } from "@/lib/seed";
 import { emptyAppData, ensureDefaults } from "@/lib/defaults";
 import { generateId } from "@/lib/utils";
 import { getSyncKey, storeSyncKey, pullFromCloud, pushToCloud, mergeAppData } from "@/lib/sync";
@@ -92,7 +91,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       local = ensureDefaults(stored);
       if (local !== stored) saveData(local);
     } else {
-      local = createSeedData();
+      local = emptyAppData();
       saveData(local);
     }
     setData(local);

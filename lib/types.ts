@@ -28,6 +28,7 @@ export interface DailyLog {
   date: string;    // "YYYY-MM-DD"
   intention: string;
   priorities: string[];
+  prioritiesDone?: boolean[];   // parallel array tracking completion; optional for back-compat
   rapidLog: RapidLogItem[];
   health: DailyHealth;
   familyNotes: string;

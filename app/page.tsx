@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Plus, Check, ArrowRight } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card, SectionLabel, Divider } from "@/components/ui/Card";
@@ -8,6 +8,7 @@ import { useAppData } from "@/hooks/useAppData";
 import { todayKey, formatLongDate, generateId } from "@/lib/utils";
 import type { BulletSymbol, RapidLogItem, DailyHealth } from "@/lib/types";
 import { emptyDailyLog } from "@/lib/defaults";
+import { cn } from "@/lib/cn";
 
 // ─── Bullet symbol helpers ────────────────────────────────────────────────────
 
@@ -54,7 +55,7 @@ function Stepper({
     <div className="flex items-center gap-2">
       <button
         onClick={() => onChange(Math.max(min, +(value - step).toFixed(1)))}
-        className="w-7 h-7 rounded-lg border border-border text-ink-3 hover:text-ink hover:border-border flex items-center justify-center text-sm transition-colors"
+        className="w-7 h-7 rounded-lg border border-border text-ink-3 hover:text-ink hover:border-ink-3 flex items-center justify-center text-sm transition-colors"
       >
         −
       </button>
@@ -63,7 +64,7 @@ function Stepper({
       </span>
       <button
         onClick={() => onChange(Math.min(max, +(value + step).toFixed(1)))}
-        className="w-7 h-7 rounded-lg border border-border text-ink-3 hover:text-ink hover:border-border flex items-center justify-center text-sm transition-colors"
+        className="w-7 h-7 rounded-lg border border-border text-ink-3 hover:text-ink hover:border-ink-3 flex items-center justify-center text-sm transition-colors"
       >
         +
       </button>
@@ -77,11 +78,10 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
   return (
     <button
       onClick={onChange}
-      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
-        checked
-          ? "bg-sage border-sage text-white"
-          : "border-border hover:border-ink-3"
-      }`}
+      className={cn(
+        "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0",
+        checked ? "bg-sage border-sage text-white" : "border-border hover:border-ink-3"
+      )}
     >
       {checked && <Check size={11} strokeWidth={3} />}
     </button>
@@ -98,6 +98,14 @@ export default function TodayPage() {
   const [newText, setNewText] = useState("");
   const [newSymbol, setNewSymbol] = useState<BulletSymbol>("task");
   const inputRef = useRef<HTMLInputElement>(null);
+  const intentionRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus intention when the page first loads and it's empty
+  useEffect(() => {
+    if (isLoaded && !log.intention) {
+      intentionRef.current?.focus();
+    }
+  }, [isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!isLoaded) {
     return (
@@ -109,12 +117,34 @@ export default function TodayPage() {
     );
   }
 
+  // ── Derived state ────────────────────────────────────────────────────────────
+  const prioritiesDone = log.prioritiesDone ?? [false, false, false];
+  const filledPriorities = log.priorities.filter(p => p.trim()).length;
+  const allPrioritiesSet = filledPriorities === 3;
+
+  const doneTasks    = log.rapidLog.filter(e => e.symbol === "completed").length;
+  const totalTasks   = log.rapidLog.filter(e => ["task", "completed"].includes(e.symbol)).length;
+  const allTasksDone = totalTasks > 0 && doneTasks === totalTasks;
+
+  // Is it evening? (after 5 PM local time)
+  const hour = new Date().getHours();
+  const isEvening = hour >= 17;
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
   function set<K extends keyof typeof log>(key: K, value: (typeof log)[K]) {
     updateDailyLog(today, { [key]: value } as Partial<typeof log>);
   }
 
   function setHealth(changes: Partial<DailyHealth>) {
     set("health", { ...log.health, ...changes });
+  }
+
+  function togglePriorityDone(i: number) {
+    const next = [...prioritiesDone];
+    while (next.length < 3) next.push(false);
+    next[i] = !next[i];
+    set("prioritiesDone", next);
   }
 
   function addEntry() {
@@ -142,7 +172,6 @@ export default function TodayPage() {
   }
 
   function startNewDay() {
-    // Migrate open tasks to tomorrow's log
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tKey = tomorrow.toISOString().split("T")[0];
@@ -151,14 +180,12 @@ export default function TodayPage() {
       .filter(e => e.symbol === "task")
       .map(e => ({ ...e, symbol: "migrated" as BulletSymbol, id: generateId() }));
 
-    // Mark today's open tasks as migrated
     updateDailyLog(today, {
       rapidLog: log.rapidLog.map(e =>
         e.symbol === "task" ? { ...e, symbol: "migrated" as BulletSymbol } : e
       ),
     });
 
-    // Seed tomorrow's log with migrated items
     if (openItems.length > 0) {
       updateDailyLog(tKey, {
         date: tKey,
@@ -182,12 +209,56 @@ export default function TodayPage() {
           <h1 className="text-[2rem] leading-tight font-serif text-ink">
             {formatLongDate(today)}
           </h1>
+
+          {/* Day-at-a-glance progress */}
+          {(totalTasks > 0 || filledPriorities > 0) && (
+            <div className="flex items-center gap-4 mt-3">
+              {filledPriorities > 0 && (
+                <span className={cn(
+                  "text-[11px] font-mono",
+                  allPrioritiesSet ? "text-sage" : "text-ink-3"
+                )}>
+                  {allPrioritiesSet ? "✓ " : ""}{filledPriorities}/3 priorities
+                </span>
+              )}
+              {totalTasks > 0 && (
+                <span className={cn(
+                  "text-[11px] font-mono",
+                  allTasksDone ? "text-sage" : "text-ink-3"
+                )}>
+                  {allTasksDone ? "✓ " : ""}{doneTasks}/{totalTasks} tasks
+                </span>
+              )}
+            </div>
+          )}
         </div>
+
+        {/* ── All-done banner ─────────────────────────────────────────────── */}
+        {allTasksDone && totalTasks >= 2 && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-sage-light border border-sage/20">
+            <span className="text-lg">✦</span>
+            <div>
+              <p className="text-sm font-medium text-sage">All tasks complete.</p>
+              <p className="text-[11px] text-sage/70 mt-0.5">Clean slate. What else will you move forward today?</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Evening reflection prompt ───────────────────────────────────── */}
+        {isEvening && !log.reflection.movedForward && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-2 border border-accent/20">
+            <span className="text-base">🌙</span>
+            <p className="text-[12px] text-ink-2 leading-relaxed">
+              Evening check-in — take 2 minutes to fill in your reflection below.
+            </p>
+          </div>
+        )}
 
         {/* ── Daily Intention ────────────────────────────────────────────── */}
         <Card>
           <SectionLabel>Daily Intention</SectionLabel>
           <input
+            ref={intentionRef}
             value={log.intention}
             onChange={e => set("intention", e.target.value)}
             placeholder="What matters most today?"
@@ -195,15 +266,37 @@ export default function TodayPage() {
           />
         </Card>
 
-        {/* ── Top 3 ──────────────────────────────────────────────────────── */}
-        <Card>
-          <SectionLabel>Top 3 Priorities</SectionLabel>
+        {/* ── Top 3 Priorities ───────────────────────────────────────────── */}
+        <Card className={cn(allPrioritiesSet && prioritiesDone.every(Boolean) && "border-sage/30")}>
+          <div className="flex items-center justify-between mb-3">
+            <SectionLabel className="mb-0">Top 3 Priorities</SectionLabel>
+            {allPrioritiesSet && (
+              <span className="text-[10px] font-mono text-ink-3">
+                {prioritiesDone.filter(Boolean).length}/3 done
+              </span>
+            )}
+          </div>
           <div className="space-y-2.5">
             {[0, 1, 2].map(i => (
               <div key={i} className="flex items-center gap-3">
-                <span className="text-xs font-mono text-ink-3 w-4 shrink-0 text-center select-none">
-                  {i + 1}
-                </span>
+                {/* Done toggle — only shown when priority has text */}
+                {log.priorities[i]?.trim() ? (
+                  <button
+                    onClick={() => togglePriorityDone(i)}
+                    className={cn(
+                      "w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all",
+                      prioritiesDone[i]
+                        ? "bg-sage border-sage text-white"
+                        : "border-border hover:border-ink-3"
+                    )}
+                  >
+                    {prioritiesDone[i] && <Check size={9} strokeWidth={3} />}
+                  </button>
+                ) : (
+                  <span className="w-5 h-5 shrink-0 flex items-center justify-center text-xs font-mono text-ink-3 select-none">
+                    {i + 1}
+                  </span>
+                )}
                 <input
                   value={log.priorities[i] ?? ""}
                   onChange={e => {
@@ -212,7 +305,10 @@ export default function TodayPage() {
                     set("priorities", next);
                   }}
                   placeholder={i === 0 ? "Most important..." : `Priority ${i + 1}`}
-                  className="flex-1 bg-transparent text-sm text-ink placeholder:text-ink-3 focus:outline-none"
+                  className={cn(
+                    "flex-1 bg-transparent text-sm placeholder:text-ink-3 focus:outline-none transition-colors",
+                    prioritiesDone[i] ? "line-through text-ink-3" : "text-ink"
+                  )}
                 />
               </div>
             ))}
@@ -221,10 +317,20 @@ export default function TodayPage() {
 
         {/* ── Rapid Log ──────────────────────────────────────────────────── */}
         <Card>
-          <SectionLabel>Rapid Log</SectionLabel>
+          <div className="flex items-center justify-between mb-3">
+            <SectionLabel className="mb-0">Rapid Log</SectionLabel>
+            {totalTasks > 0 && (
+              <span className={cn(
+                "text-[10px] font-mono tabular-nums transition-colors",
+                allTasksDone ? "text-sage" : "text-ink-3"
+              )}>
+                {doneTasks}/{totalTasks} done
+              </span>
+            )}
+          </div>
 
           {log.rapidLog.length === 0 && (
-            <p className="text-xs text-ink-3 mb-3">Nothing logged yet. Add your first entry below.</p>
+            <p className="text-xs text-ink-3 mb-3">Nothing logged yet — add your first entry below.</p>
           )}
 
           <div className="space-y-0.5 mb-3">
@@ -232,12 +338,12 @@ export default function TodayPage() {
               <div key={entry.id} className="flex items-start gap-2.5 group py-1.5">
                 <button
                   onClick={() => cycleEntry(entry.id)}
-                  title={`${SYMBOLS[entry.symbol].label} — click to change`}
+                  title={`${SYMBOLS[entry.symbol].label} — click to cycle`}
                   className="text-sm font-mono text-ink-3 hover:text-accent transition-colors mt-0.5 w-4 shrink-0 text-left leading-none"
                 >
                   {SYMBOLS[entry.symbol].glyph}
                 </button>
-                <span className={`flex-1 text-sm leading-relaxed ${entryClass(entry.symbol)}`}>
+                <span className={cn("flex-1 text-sm leading-relaxed", entryClass(entry.symbol))}>
                   {entry.content}
                 </span>
                 <button
@@ -256,7 +362,7 @@ export default function TodayPage() {
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => setNewSymbol(nextSymbol(newSymbol))}
-              title="Cycle symbol"
+              title={`Symbol: ${SYMBOLS[newSymbol].label} — click to cycle`}
               className="text-sm font-mono text-ink-3 hover:text-accent transition-colors w-4 shrink-0 text-left"
             >
               {SYMBOLS[newSymbol].glyph}
@@ -271,13 +377,14 @@ export default function TodayPage() {
             />
             <button
               onClick={addEntry}
-              className="text-ink-3 hover:text-accent transition-colors shrink-0"
+              disabled={!newText.trim()}
+              className="text-ink-3 hover:text-accent disabled:opacity-30 transition-colors shrink-0"
             >
               <Plus size={14} />
             </button>
           </div>
 
-          {/* Legend */}
+          {/* Symbol legend */}
           <div className="flex flex-wrap gap-x-4 gap-y-1 mt-4 pt-3 border-t border-border-light">
             {Object.entries(SYMBOLS).map(([key, { glyph, label }]) => (
               <span key={key} className="text-[10px] text-ink-3 font-mono">
@@ -292,7 +399,6 @@ export default function TodayPage() {
           <SectionLabel>Health Basics</SectionLabel>
           <div className="space-y-3.5">
 
-            {/* Movement */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-ink-2">Movement</span>
               <Toggle
@@ -301,7 +407,6 @@ export default function TodayPage() {
               />
             </div>
 
-            {/* Protein */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-ink-2">Protein goal</span>
               <Toggle
@@ -312,7 +417,6 @@ export default function TodayPage() {
 
             <Divider />
 
-            {/* Water */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-ink-2">Water</span>
               <Stepper
@@ -324,7 +428,6 @@ export default function TodayPage() {
               />
             </div>
 
-            {/* Sleep */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-ink-2">Sleep last night</span>
               <Stepper
@@ -352,7 +455,7 @@ export default function TodayPage() {
         </Card>
 
         {/* ── Evening Reflection ─────────────────────────────────────────── */}
-        <Card>
+        <Card className={cn(isEvening && !log.reflection.movedForward && "border-accent/30")}>
           <SectionLabel>Evening Reflection</SectionLabel>
           <div className="space-y-4">
             <div>
@@ -383,16 +486,17 @@ export default function TodayPage() {
           </div>
         </Card>
 
-        {/* ── New Day ────────────────────────────────────────────────────── */}
+        {/* ── Close Day ──────────────────────────────────────────────────── */}
         <div className="flex justify-end pt-2">
           <button
             onClick={startNewDay}
             className="flex items-center gap-1.5 text-xs text-ink-3 hover:text-accent transition-colors"
           >
-            Start New Day
+            Close day & migrate tasks
             <ArrowRight size={12} />
           </button>
         </div>
+
       </div>
     </AppLayout>
   );
