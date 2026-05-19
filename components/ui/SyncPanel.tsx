@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Cloud, CloudOff, Loader, Check, X, RefreshCw } from "lucide-react";
+import { Cloud, CloudOff, Loader, Check, X, RefreshCw, Upload } from "lucide-react";
 import type { SyncStatus } from "@/hooks/useAppData";
 import { cn } from "@/lib/cn";
 
@@ -11,14 +11,16 @@ interface Props {
   onActivate: (key: string) => Promise<void>;
   onClear: () => void;
   onSyncNow: () => Promise<void>;
+  onForcePush: () => Promise<void>;
   dropDirection?: "up" | "down";
 }
 
-export default function SyncPanel({ syncKey, syncStatus, onActivate, onClear, onSyncNow, dropDirection = "up" }: Props) {
-  const [open, setOpen]     = useState(false);
-  const [input, setInput]   = useState("");
-  const [busy, setBusy]     = useState(false);
-  const [err, setErr]       = useState<string | null>(null);
+export default function SyncPanel({ syncKey, syncStatus, onActivate, onClear, onSyncNow, onForcePush, dropDirection = "up" }: Props) {
+  const [open, setOpen]         = useState(false);
+  const [input, setInput]       = useState("");
+  const [busy, setBusy]         = useState(false);
+  const [err, setErr]           = useState<string | null>(null);
+  const [confirmPush, setConfirmPush] = useState(false);
 
   const statusIcon = () => {
     if (!syncKey)                       return <CloudOff size={13} className="text-ink-3" />;
@@ -53,6 +55,11 @@ export default function SyncPanel({ syncKey, syncStatus, onActivate, onClear, on
   async function handleSyncNow() {
     setBusy(true);
     try { await onSyncNow(); } finally { setBusy(false); }
+  }
+
+  async function handleForcePush() {
+    setBusy(true);
+    try { await onForcePush(); setConfirmPush(false); } finally { setBusy(false); }
   }
 
   return (
@@ -109,6 +116,34 @@ export default function SyncPanel({ syncKey, syncStatus, onActivate, onClear, on
                   Sync now
                 </button>
               </div>
+
+              {/* Force push */}
+              {!confirmPush ? (
+                <button
+                  onClick={() => setConfirmPush(true)}
+                  className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded text-[11px] font-mono text-ink-3 hover:text-rust transition-colors"
+                >
+                  <Upload size={10} />
+                  Overwrite cloud with local
+                </button>
+              ) : (
+                <div className="mt-2 space-y-1.5">
+                  <p className="text-[9px] font-mono text-rust text-center">Replace cloud data with what's on this device?</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setConfirmPush(false)}
+                      className="flex-1 py-1.5 rounded text-[11px] font-mono bg-surface-2 text-ink-3 hover:bg-border transition-colors"
+                    >Cancel</button>
+                    <button
+                      onClick={handleForcePush}
+                      disabled={busy}
+                      className="flex-1 py-1.5 rounded text-[11px] font-mono bg-rust text-white hover:bg-rust/80 disabled:opacity-50 transition-colors"
+                    >
+                      {busy ? <Loader size={10} className="animate-spin mx-auto" /> : "Yes, overwrite"}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <p className="text-[9px] font-mono text-ink-3 mt-2 leading-relaxed opacity-60">
                 Changes auto-push every 2.5s. Same key on any device = same data.

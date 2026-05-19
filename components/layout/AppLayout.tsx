@@ -87,7 +87,7 @@ function MobileNavItem({
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname();
-  const { syncKey, syncStatus, activateSyncKey, clearSyncKey, syncNow } = useAppData();
+  const { syncKey, syncStatus, activateSyncKey, clearSyncKey, syncNow, forcePush } = useAppData();
 
   const isActive = (href: string) =>
     href === "/" ? path === "/" : path.startsWith(href);
@@ -130,6 +130,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onActivate={activateSyncKey}
             onClear={clearSyncKey}
             onSyncNow={syncNow}
+            onForcePush={forcePush}
           />
         </div>
       </aside>
@@ -143,6 +144,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           onActivate={activateSyncKey}
           onClear={clearSyncKey}
           onSyncNow={syncNow}
+          onForcePush={forcePush}
           dropDirection="down"
         />
       </div>

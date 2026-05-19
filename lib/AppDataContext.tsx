@@ -27,6 +27,7 @@ export interface AppDataContextValue {
   activateSyncKey: (key: string) => Promise<void>;
   clearSyncKey: () => void;
   syncNow: () => Promise<void>;
+  forcePush: () => Promise<void>;
   // data updaters
   updateDailyLog: (date: string, changes: Partial<DailyLog>) => void;
   updateWeeklyLog: (weekStart: string, changes: Partial<WeeklyLog>) => void;
@@ -162,6 +163,25 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Overwrite cloud with whatever is on this device — ignores cloud timestamp
+  const forcePush = useCallback(async () => {
+    const key = syncKeyRef.current;
+    if (!key) return;
+    setSyncStatus("syncing");
+    try {
+      const local = loadData();
+      if (!local) return;
+      // Bump lastUpdated so this device wins any future merge
+      const stamped = { ...local, lastUpdated: new Date().toISOString() };
+      saveData(stamped);
+      setData(stamped);
+      await pushToCloud(key, stamped);
+      setSyncStatus("ok");
+    } catch {
+      setSyncStatus("error");
+    }
+  }, []);
+
   // ── Daily log ─────────────────────────────────────────────────────────────
   const updateDailyLog = useCallback(
     (date: string, changes: Partial<DailyLog>) =>
@@ -249,7 +269,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     <AppDataContext.Provider
       value={{
         data, isLoaded,
-        syncKey, syncStatus, activateSyncKey, clearSyncKey, syncNow,
+        syncKey, syncStatus, activateSyncKey, clearSyncKey, syncNow, forcePush,
         updateDailyLog, updateWeeklyLog,
         addBrainDumpItem, updateBrainDumpItem, removeBrainDumpItem,
         updateLifeArea,
