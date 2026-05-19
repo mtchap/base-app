@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Sun, CalendarDays, Zap, LayoutGrid, Activity,
-  Archive, Sparkles, Shield, Plus, X,
+  Archive, Sparkles, Shield, Plus, HelpCircle,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useAppData } from "@/hooks/useAppData";
@@ -22,6 +22,7 @@ const NAV = [
   { href: "/looks",       label: "Aesthetic", Icon: Sparkles },
   { href: "/gooning",     label: "Gooning",   Icon: Shield },
   { href: "/archive",     label: "Archive",   Icon: Archive },
+  { href: "/help",        label: "Guide",     Icon: HelpCircle },
 ] as const;
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
