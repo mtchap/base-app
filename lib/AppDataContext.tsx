@@ -102,10 +102,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       pullFromCloud(storedKey)
         .then(cloud => {
           if (!cloud) { setSyncStatus("ok"); return; }
-          const merged = mergeAppData(local, cloud);
-          if (merged !== local) {
-            setData(merged);
-            saveData(merged);
+          // Merge cloud + local, then re-run ensureDefaults so migration
+          // isn't lost if the cloud copy was newer and didn't have it yet
+          const merged   = mergeAppData(local, cloud);
+          const ready    = ensureDefaults(merged);
+          if (ready !== local) {
+            setData(ready);
+            saveData(ready);
           }
           setSyncStatus("ok");
         })
