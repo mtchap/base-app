@@ -36,6 +36,7 @@ export const viewport: Viewport = {
   themeColor: "#0C0D15",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",   // required for env(safe-area-inset-*) on iOS
 };
 
 export default function RootLayout({

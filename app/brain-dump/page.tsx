@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X, ArrowRight } from "lucide-react";
+import { Plus, X, ArrowRight, Check } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { useAppData } from "@/hooks/useAppData";
 import { BRAIN_DUMP_LABELS, type BrainDumpLabel } from "@/lib/types";
-import { formatShortDate } from "@/lib/utils";
+import { formatShortDate, todayKey, generateId } from "@/lib/utils";
 import { cn } from "@/lib/cn";
 
 const LABEL_STYLES: Record<BrainDumpLabel, string> = {
@@ -22,7 +22,7 @@ const LABEL_STYLES: Record<BrainDumpLabel, string> = {
 const ALL_FILTERS = ["all", ...BRAIN_DUMP_LABELS.map(l => l.key)] as const;
 
 export default function BrainDumpPage() {
-  const { data, isLoaded, addBrainDumpItem, updateBrainDumpItem, removeBrainDumpItem } =
+  const { data, isLoaded, addBrainDumpItem, updateBrainDumpItem, removeBrainDumpItem, updateDailyLog } =
     useAppData();
 
   const [input, setInput] = useState("");
@@ -46,11 +46,26 @@ export default function BrainDumpPage() {
     setInput("");
   }
 
+  const [justConverted, setJustConverted] = useState<string | null>(null);
+
   function convertToTask(id: string, content: string) {
+    const today = todayKey();
+    const todayLog = data.dailyLogs[today];
+    const newItem = {
+      id: generateId(),
+      symbol: "task" as const,
+      content,
+      createdAt: new Date().toISOString(),
+    };
+    // Add to today's rapid log
+    updateDailyLog(today, {
+      rapidLog: [...(todayLog?.rapidLog ?? []), newItem],
+    });
     // Mark as converted in brain dump
-    updateBrainDumpItem(id, { convertedToTask: true, label: "do-now" });
-    // Also add to today's rapid log via a note
-    // (We reference today's log through the standard updateDailyLog flow)
+    updateBrainDumpItem(id, { convertedToTask: true });
+    // Flash confirmation
+    setJustConverted(id);
+    setTimeout(() => setJustConverted(null), 2000);
   }
 
   return (
@@ -181,13 +196,15 @@ export default function BrainDumpPage() {
                 </div>
 
                 {/* Convert to task action */}
-                {!item.convertedToTask && item.label === "do-now" && (
+                {!item.convertedToTask && (
                   <button
                     onClick={() => convertToTask(item.id, item.content)}
                     className="mt-3 flex items-center gap-1.5 text-[11px] text-accent hover:text-accent/80 transition-colors"
                   >
-                    <ArrowRight size={11} />
-                    Move to Today's log
+                    {justConverted === item.id
+                      ? <><Check size={11} className="text-sage" /><span className="text-sage">Added to today</span></>
+                      : <><ArrowRight size={11} />Move to Today&apos;s log</>
+                    }
                   </button>
                 )}
               </Card>

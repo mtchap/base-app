@@ -23,18 +23,18 @@ export default function SyncPanel({ syncKey, syncStatus, onActivate, onClear, on
   const [confirmPush, setConfirmPush] = useState(false);
 
   const statusIcon = () => {
-    if (!syncKey)                       return <CloudOff size={13} className="text-ink-3" />;
-    if (syncStatus === "syncing" || busy) return <Loader size={13} className="text-accent animate-spin" />;
-    if (syncStatus === "ok")            return <Cloud size={13} className="text-sage" />;
-    if (syncStatus === "error")         return <Cloud size={13} className="text-rust" />;
+    if (!syncKey)                         return <CloudOff size={13} className="text-ink-3" />;
+    if (syncStatus === "syncing" || busy) return <Loader   size={13} className="text-accent animate-spin" />;
+    if (syncStatus === "ok")              return <Cloud    size={13} className="text-sage" />;
+    if (syncStatus === "error")           return <CloudOff size={13} className="text-rust" />;
     return <Cloud size={13} className="text-ink-3" />;
   };
 
   const statusLabel = () => {
-    if (!syncKey)               return "No sync";
+    if (!syncKey)                         return "No sync";
     if (syncStatus === "syncing" || busy) return "Syncing…";
-    if (syncStatus === "ok")    return "Synced";
-    if (syncStatus === "error") return "Sync error";
+    if (syncStatus === "ok")              return "Synced";
+    if (syncStatus === "error")           return "Offline";
     return "Sync off";
   };
 
@@ -143,6 +143,12 @@ export default function SyncPanel({ syncKey, syncStatus, onActivate, onClear, on
                     </button>
                   </div>
                 </div>
+              )}
+
+              {syncStatus === "error" && (
+                <p className="text-[9px] font-mono text-rust mt-2">
+                  Offline — changes saved locally and will sync when back online.
+                </p>
               )}
 
               <p className="text-[9px] font-mono text-ink-3 mt-2 leading-relaxed opacity-60">

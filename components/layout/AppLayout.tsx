@@ -136,7 +136,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* ── Mobile Top Bar ────────────────────────────────────────────────── */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-surface border-b border-border flex items-center justify-between px-4 h-11">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-surface border-b border-border flex items-center justify-between px-4 h-11 safe-top">
         <span className="text-sm font-serif font-bold text-ink tracking-tight">BASE</span>
         <SyncPanel
           syncKey={syncKey}
@@ -155,7 +155,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* ── Mobile Bottom Nav ─────────────────────────────────────────────── */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-surface border-t border-border">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-surface border-t border-border safe-bottom">
         <div className="flex items-center overflow-x-auto px-2 py-1 gap-0.5 scrollbar-none">
           {NAV.map(({ href, label, Icon }) => (
             <MobileNavItem

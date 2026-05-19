@@ -79,6 +79,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ─── iOS safe-area support ───────────────────────────────────────────────────── */
+/* Applied via class names in AppLayout. Requires viewport-fit=cover.             */
+.safe-top    { padding-top:    env(safe-area-inset-top,    0px); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
 /* ─── Scrollbar ───────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }

@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { useState, useRef } from "react";
+import { ChevronDown, ChevronRight, Download, Upload, AlertCircle } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card, SectionLabel, Divider } from "@/components/ui/Card";
 import { useAppData } from "@/hooks/useAppData";
 import { todayKey, formatLongDate, formatShortDate } from "@/lib/utils";
+import { saveData } from "@/lib/storage";
+import type { AppData } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
 const SYMBOLS: Record<string, string> = {
@@ -22,6 +24,40 @@ function entryStyle(symbol: string): string {
 export default function ArchivePage() {
   const { data, isLoaded } = useAppData();
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  const [importError, setImportError]   = useState<string | null>(null);
+  const [importOk, setImportOk]         = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function exportData() {
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `base-backup-${todayKey()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportError(null);
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const parsed = JSON.parse(ev.target?.result as string) as AppData;
+        if (!parsed.version || !parsed.dailyLogs) throw new Error("Invalid backup file");
+        saveData(parsed);
+        setImportOk(true);
+        setTimeout(() => window.location.reload(), 1200);
+      } catch (err) {
+        setImportError(err instanceof Error ? err.message : "Could not read file");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
 
   if (!isLoaded) {
     return (
@@ -55,6 +91,32 @@ export default function ArchivePage() {
               : `${pastDates.length} day${pastDates.length === 1 ? "" : "s"} logged.`}
           </p>
         </div>
+
+        {/* ── Backup / Restore ───────────────────────────────────────────── */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportData}
+            className="flex items-center gap-1.5 text-[11px] font-mono text-ink-3 hover:text-ink border border-border hover:border-ink-3 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <Download size={11} /> Export backup
+          </button>
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="flex items-center gap-1.5 text-[11px] font-mono text-ink-3 hover:text-ink border border-border hover:border-ink-3 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <Upload size={11} /> Restore backup
+          </button>
+          <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
+        </div>
+
+        {importError && (
+          <div className="flex items-center gap-2 text-[11px] text-rust font-mono">
+            <AlertCircle size={11} /> {importError}
+          </div>
+        )}
+        {importOk && (
+          <div className="text-[11px] text-sage font-mono">Backup restored — reloading…</div>
+        )}
 
         {/* ── Empty state ────────────────────────────────────────────────── */}
         {pastDates.length === 0 && (
