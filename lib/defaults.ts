@@ -157,13 +157,23 @@ export function ensureDefaults(data: AppData): AppData {
   let changed = false;
   const next  = { ...data };
 
-  if (!next.dailyLogs[today]) {
-    const newLog = emptyDailyLog(today);
+  // Create today's log if missing, OR migrate into it if it exists but is still empty
+  const todayLog = next.dailyLogs[today];
+  const todayIsEmpty = !todayLog || todayLog.rapidLog.length === 0;
 
-    // ── Auto-migrate uncompleted tasks from the most recent past day ──────────
-    const pastKeys = Object.keys(next.dailyLogs).sort().reverse();
-    const prevKey  = pastKeys[0]; // most recent previous day
-    const prevLog  = prevKey ? next.dailyLogs[prevKey] : null;
+  if (!todayLog) {
+    next.dailyLogs = { ...next.dailyLogs, [today]: emptyDailyLog(today) };
+    changed = true;
+  }
+
+  if (todayIsEmpty) {
+    // ── Auto-migrate uncompleted tasks from the most recent past day ─────────
+    const pastKeys = Object.keys(next.dailyLogs)
+      .filter(k => k < today)
+      .sort()
+      .reverse();
+    const prevKey = pastKeys[0];
+    const prevLog = prevKey ? next.dailyLogs[prevKey] : null;
 
     if (prevLog) {
       const toMigrate = prevLog.rapidLog.filter(
@@ -172,13 +182,14 @@ export function ensureDefaults(data: AppData): AppData {
 
       if (toMigrate.length > 0) {
         // Copy into today as migrated items (new IDs to avoid collisions)
-        newLog.rapidLog = toMigrate.map(
+        const migratedItems = toMigrate.map(
           (item): RapidLogItem => ({ ...item, id: generateId(), symbol: "migrated" })
         );
 
-        // Mark the originals in yesterday's log as migrated too
         next.dailyLogs = {
           ...next.dailyLogs,
+          [today]: { ...next.dailyLogs[today], rapidLog: migratedItems },
+          // Mark originals in previous day as migrated
           [prevKey]: {
             ...prevLog,
             rapidLog: prevLog.rapidLog.map(item =>
@@ -188,11 +199,9 @@ export function ensureDefaults(data: AppData): AppData {
             ),
           },
         };
+        changed = true;
       }
     }
-
-    next.dailyLogs = { ...next.dailyLogs, [today]: newLog };
-    changed = true;
   }
   if (!next.weeklyLogs[ws]) {
     next.weeklyLogs = { ...next.weeklyLogs, [ws]: emptyWeeklyLog(ws) };
